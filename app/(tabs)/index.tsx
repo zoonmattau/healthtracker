@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,19 +6,219 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Animated,
+  Dimensions,
+  Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { colors, fontSize, fontWeight, spacing, borderRadius, shadows } from '../../src/constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { colors, fontSize, fontWeight, spacing, borderRadius } from '../../src/constants/theme';
 import { supabase } from '../../src/lib/supabase';
+
+const { width } = Dimensions.get('window');
+
+// Animated Progress Ring Component
+function ProgressRing({
+  progress,
+  size = 140,
+  strokeWidth = 12,
+  color = colors.accent.primary
+}: {
+  progress: number;
+  size?: number;
+  strokeWidth?: number;
+  color?: string;
+}) {
+  const animatedValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: progress,
+      duration: 1000,
+      useNativeDriver: false,
+    }).start();
+  }, [progress]);
+
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  return (
+    <View style={{ width: size, height: size }}>
+      {/* Background Ring */}
+      <View
+        style={[
+          styles.ringBackground,
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            borderWidth: strokeWidth,
+          },
+        ]}
+      />
+      {/* Progress Ring - using a view-based approach for web compatibility */}
+      <View
+        style={[
+          styles.ringProgress,
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            borderWidth: strokeWidth,
+            borderColor: color,
+            borderTopColor: 'transparent',
+            borderRightColor: progress > 25 ? color : 'transparent',
+            borderBottomColor: progress > 50 ? color : 'transparent',
+            borderLeftColor: progress > 75 ? color : 'transparent',
+            transform: [{ rotate: '-45deg' }],
+          },
+        ]}
+      />
+    </View>
+  );
+}
+
+// Animated Macro Bar Component
+function MacroBar({
+  label,
+  current,
+  goal,
+  color,
+  icon,
+}: {
+  label: string;
+  current: number;
+  goal: number;
+  color: string;
+  icon: string;
+}) {
+  const progress = Math.min((current / goal) * 100, 100);
+  const animatedWidth = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(animatedWidth, {
+      toValue: progress,
+      duration: 800,
+      useNativeDriver: false,
+    }).start();
+  }, [progress]);
+
+  const widthInterpolate = animatedWidth.interpolate({
+    inputRange: [0, 100],
+    outputRange: ['0%', '100%'],
+  });
+
+  return (
+    <View style={styles.macroItem}>
+      <View style={styles.macroHeader}>
+        <View style={styles.macroLabelContainer}>
+          <View style={[styles.macroIcon, { backgroundColor: `${color}20` }]}>
+            <Ionicons name={icon as any} size={14} color={color} />
+          </View>
+          <Text style={styles.macroLabel}>{label}</Text>
+        </View>
+        <Text style={styles.macroValue}>
+          <Text style={{ color: color, fontWeight: '600' }}>{current}g</Text>
+          <Text style={styles.macroGoal}> / {goal}g</Text>
+        </Text>
+      </View>
+      <View style={styles.macroBarContainer}>
+        <Animated.View
+          style={[
+            styles.macroBarFill,
+            {
+              width: widthInterpolate,
+              backgroundColor: color,
+            },
+          ]}
+        />
+      </View>
+    </View>
+  );
+}
+
+// Quick Action Button Component
+function QuickAction({
+  icon,
+  label,
+  gradient,
+  onPress,
+}: {
+  icon: string;
+  label: string;
+  gradient: string[];
+  onPress?: () => void;
+}) {
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onPress?.();
+  };
+
+  return (
+    <Pressable
+      onPress={handlePress}
+      style={({ pressed }) => [
+        styles.quickAction,
+        pressed && styles.quickActionPressed,
+      ]}
+    >
+      <LinearGradient
+        colors={gradient}
+        style={styles.quickActionIconContainer}
+      >
+        <Ionicons name={icon as any} size={22} color="#FFF" />
+      </LinearGradient>
+      <Text style={styles.quickActionText}>{label}</Text>
+    </Pressable>
+  );
+}
 
 export default function Home() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [userName, setUserName] = useState('');
 
+  // Animation values
+  const headerOpacity = useRef(new Animated.Value(0)).current;
+  const caloriesScale = useRef(new Animated.Value(0.9)).current;
+  const cardsTranslate = useRef(new Animated.Value(30)).current;
+  const cardsOpacity = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     loadUserData();
+    startAnimations();
   }, []);
+
+  const startAnimations = () => {
+    Animated.parallel([
+      Animated.timing(headerOpacity, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.spring(caloriesScale, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.timing(cardsOpacity, {
+        toValue: 1,
+        duration: 500,
+        delay: 200,
+        useNativeDriver: true,
+      }),
+      Animated.spring(cardsTranslate, {
+        toValue: 0,
+        tension: 50,
+        friction: 8,
+        delay: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   const loadUserData = async () => {
     try {
@@ -33,6 +233,7 @@ export default function Home() {
 
   const onRefresh = async () => {
     setRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await loadUserData();
     setRefreshing(false);
   };
@@ -47,7 +248,7 @@ export default function Home() {
   const getFormattedDate = () => {
     return new Date().toLocaleDateString('en-US', {
       weekday: 'long',
-      month: 'long',
+      month: 'short',
       day: 'numeric',
     });
   };
@@ -55,18 +256,22 @@ export default function Home() {
   // Placeholder data - will be dynamic later
   const caloriesConsumed = 1840;
   const caloriesGoal = 2400;
+  const caloriesRemaining = caloriesGoal - caloriesConsumed;
   const caloriesPercent = Math.round((caloriesConsumed / caloriesGoal) * 100);
 
   const macros = {
-    protein: { current: 142, goal: 180 },
-    carbs: { current: 180, goal: 250 },
-    fat: { current: 62, goal: 80 },
+    protein: { current: 142, goal: 180, color: '#EF4444', icon: 'fish-outline' },
+    carbs: { current: 180, goal: 250, color: '#F59E0B', icon: 'leaf-outline' },
+    fat: { current: 62, goal: 80, color: '#3B82F6', icon: 'water-outline' },
   };
+
+  const streak = 12;
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -76,122 +281,215 @@ export default function Home() {
       }
     >
       {/* Header */}
-      <View style={styles.header}>
+      <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
         <View>
           <Text style={styles.greeting}>
-            {getGreeting()}{userName ? `, ${userName}` : ''}
+            {getGreeting()}{userName ? `, ${userName}` : ''} 👋
           </Text>
           <Text style={styles.date}>{getFormattedDate()}</Text>
         </View>
-        <TouchableOpacity style={styles.avatarPlaceholder}>
-          <Text style={styles.avatarText}>
-            {userName ? userName[0].toUpperCase() : '?'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+        <Pressable
+          style={styles.avatarContainer}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/(tabs)/profile');
+          }}
+        >
+          <LinearGradient
+            colors={['#3B82F6', '#8B5CF6']}
+            style={styles.avatar}
+          >
+            <Text style={styles.avatarText}>
+              {userName ? userName[0].toUpperCase() : '?'}
+            </Text>
+          </LinearGradient>
+        </Pressable>
+      </Animated.View>
 
       {/* Calories Card */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Today's Calories</Text>
+      <Animated.View
+        style={[
+          styles.caloriesCard,
+          {
+            transform: [{ scale: caloriesScale }],
+          },
+        ]}
+      >
+        <LinearGradient
+          colors={['rgba(59, 130, 246, 0.1)', 'rgba(139, 92, 246, 0.05)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.caloriesGradient}
+        />
 
-        {/* Progress Ring Placeholder */}
-        <View style={styles.caloriesContainer}>
-          <View style={styles.caloriesRing}>
-            <Text style={styles.caloriesMain}>{caloriesConsumed}</Text>
-            <Text style={styles.caloriesGoal}>of {caloriesGoal}</Text>
+        <View style={styles.caloriesContent}>
+          <View style={styles.caloriesLeft}>
+            <View style={styles.caloriesRingContainer}>
+              <ProgressRing progress={caloriesPercent} />
+              <View style={styles.caloriesCenter}>
+                <Text style={styles.caloriesNumber}>{caloriesConsumed}</Text>
+                <Text style={styles.caloriesUnit}>kcal</Text>
+              </View>
+            </View>
           </View>
-          <Text style={styles.caloriesPercent}>{caloriesPercent}%</Text>
+
+          <View style={styles.caloriesRight}>
+            <View style={styles.caloriesStat}>
+              <Text style={styles.caloriesStatLabel}>Goal</Text>
+              <Text style={styles.caloriesStatValue}>{caloriesGoal}</Text>
+            </View>
+            <View style={styles.caloriesDivider} />
+            <View style={styles.caloriesStat}>
+              <Text style={styles.caloriesStatLabel}>Remaining</Text>
+              <Text style={[styles.caloriesStatValue, { color: colors.success.primary }]}>
+                {caloriesRemaining}
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Macros */}
         <View style={styles.macrosContainer}>
-          <View style={styles.macroItem}>
-            <Text style={styles.macroLabel}>Protein</Text>
-            <View style={styles.macroBar}>
-              <View
-                style={[
-                  styles.macroFill,
-                  styles.proteinFill,
-                  { width: `${(macros.protein.current / macros.protein.goal) * 100}%` },
-                ]}
-              />
-            </View>
-            <Text style={styles.macroValue}>{macros.protein.current}g</Text>
-          </View>
-
-          <View style={styles.macroItem}>
-            <Text style={styles.macroLabel}>Carbs</Text>
-            <View style={styles.macroBar}>
-              <View
-                style={[
-                  styles.macroFill,
-                  styles.carbsFill,
-                  { width: `${(macros.carbs.current / macros.carbs.goal) * 100}%` },
-                ]}
-              />
-            </View>
-            <Text style={styles.macroValue}>{macros.carbs.current}g</Text>
-          </View>
-
-          <View style={styles.macroItem}>
-            <Text style={styles.macroLabel}>Fat</Text>
-            <View style={styles.macroBar}>
-              <View
-                style={[
-                  styles.macroFill,
-                  styles.fatFill,
-                  { width: `${(macros.fat.current / macros.fat.goal) * 100}%` },
-                ]}
-              />
-            </View>
-            <Text style={styles.macroValue}>{macros.fat.current}g</Text>
-          </View>
+          <MacroBar {...macros.protein} label="Protein" />
+          <MacroBar {...macros.carbs} label="Carbs" />
+          <MacroBar {...macros.fat} label="Fat" />
         </View>
-      </View>
+      </Animated.View>
 
       {/* Today's Workout Card */}
-      <TouchableOpacity style={styles.card} activeOpacity={0.8}>
-        <Text style={styles.cardTitle}>Today's Workout</Text>
-        <View style={styles.workoutPreview}>
-          <View style={styles.workoutInfo}>
-            <Text style={styles.workoutName}>No workout scheduled</Text>
-            <Text style={styles.workoutSubtext}>Tap to start a workout</Text>
+      <Animated.View
+        style={[
+          styles.workoutCard,
+          {
+            opacity: cardsOpacity,
+            transform: [{ translateY: cardsTranslate }],
+          },
+        ]}
+      >
+        <Pressable
+          style={({ pressed }) => [
+            styles.workoutPressable,
+            pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
+          ]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          }}
+        >
+          <View style={styles.workoutContent}>
+            <View style={styles.workoutInfo}>
+              <View style={styles.workoutBadge}>
+                <Ionicons name="barbell" size={14} color={colors.accent.primary} />
+                <Text style={styles.workoutBadgeText}>TODAY'S WORKOUT</Text>
+              </View>
+              <Text style={styles.workoutTitle}>Push Day - Chest & Triceps</Text>
+              <Text style={styles.workoutMeta}>8 exercises • ~45 min</Text>
+            </View>
+            <LinearGradient
+              colors={['#3B82F6', '#2563EB']}
+              style={styles.playButton}
+            >
+              <Ionicons name="play" size={24} color="#FFF" style={{ marginLeft: 3 }} />
+            </LinearGradient>
           </View>
-          <View style={styles.playButton}>
-            <Text style={styles.playIcon}>▶</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
+        </Pressable>
+      </Animated.View>
 
       {/* Quick Actions */}
-      <Text style={styles.sectionTitle}>Quick Actions</Text>
-      <View style={styles.quickActions}>
-        <TouchableOpacity style={styles.quickAction}>
-          <Text style={styles.quickActionIcon}>📸</Text>
-          <Text style={styles.quickActionText}>Scan</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.quickAction}>
-          <Text style={styles.quickActionIcon}>🍎</Text>
-          <Text style={styles.quickActionText}>Food</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.quickAction}>
-          <Text style={styles.quickActionIcon}>🏋️</Text>
-          <Text style={styles.quickActionText}>Workout</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.quickAction}>
-          <Text style={styles.quickActionIcon}>💧</Text>
-          <Text style={styles.quickActionText}>Water</Text>
-        </TouchableOpacity>
-      </View>
+      <Animated.View
+        style={[
+          { opacity: cardsOpacity, transform: [{ translateY: cardsTranslate }] },
+        ]}
+      >
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.quickActionsGrid}>
+          <QuickAction
+            icon="camera-outline"
+            label="Scan Food"
+            gradient={['#F59E0B', '#D97706']}
+          />
+          <QuickAction
+            icon="restaurant-outline"
+            label="Log Meal"
+            gradient={['#10B981', '#059669']}
+          />
+          <QuickAction
+            icon="barbell-outline"
+            label="Workout"
+            gradient={['#3B82F6', '#2563EB']}
+          />
+          <QuickAction
+            icon="water-outline"
+            label="Water"
+            gradient={['#06B6D4', '#0891B2']}
+          />
+        </View>
+      </Animated.View>
 
       {/* Streak Card */}
-      <View style={styles.streakCard}>
-        <Text style={styles.streakIcon}>🔥</Text>
-        <View style={styles.streakInfo}>
-          <Text style={styles.streakNumber}>0 day streak</Text>
-          <Text style={styles.streakText}>Log something to start!</Text>
+      <Animated.View
+        style={[
+          styles.streakCard,
+          {
+            opacity: cardsOpacity,
+            transform: [{ translateY: cardsTranslate }],
+          },
+        ]}
+      >
+        <LinearGradient
+          colors={['rgba(249, 115, 22, 0.15)', 'rgba(234, 88, 12, 0.05)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFillObject}
+          />
+        <View style={styles.streakContent}>
+          <View style={styles.streakLeft}>
+            <View style={styles.streakIconContainer}>
+              <Text style={styles.streakEmoji}>🔥</Text>
+            </View>
+            <View>
+              <Text style={styles.streakNumber}>{streak} Day Streak!</Text>
+              <Text style={styles.streakText}>Keep it going, champion</Text>
+            </View>
+          </View>
+          <View style={styles.streakDays}>
+            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
+              <View key={i} style={styles.streakDay}>
+                <Text style={styles.streakDayLabel}>{day}</Text>
+                <View
+                  style={[
+                    styles.streakDot,
+                    i < 5 && styles.streakDotActive,
+                  ]}
+                >
+                  {i < 5 && <Ionicons name="checkmark" size={10} color="#FFF" />}
+                </View>
+              </View>
+            ))}
+          </View>
         </View>
-      </View>
+      </Animated.View>
+
+      {/* Mental Check-in Card */}
+      <Animated.View
+        style={[
+          styles.checkinCard,
+          {
+            opacity: cardsOpacity,
+            transform: [{ translateY: cardsTranslate }],
+          },
+        ]}
+      >
+        <View style={styles.checkinContent}>
+          <View style={styles.checkinIcon}>
+            <Ionicons name="happy-outline" size={24} color={colors.accent.primary} />
+          </View>
+          <View style={styles.checkinText}>
+            <Text style={styles.checkinTitle}>How are you feeling today?</Text>
+            <Text style={styles.checkinSubtitle}>Quick daily check-in</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
+        </View>
+      </Animated.View>
     </ScrollView>
   );
 }
@@ -203,9 +501,11 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl + spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingTop: 60,
+    paddingBottom: 100,
   },
+
+  // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -213,182 +513,343 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   greeting: {
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
+    fontSize: 28,
+    fontWeight: '700',
     color: colors.text.primary,
+    letterSpacing: -0.5,
   },
   date: {
-    fontSize: fontSize.sm,
+    fontSize: fontSize.md,
     color: colors.text.secondary,
-    marginTop: spacing.xs,
+    marginTop: 4,
   },
-  avatarPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.accent.muted,
+  avatarContainer: {
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    color: colors.accent.primary,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFF',
   },
-  card: {
+
+  // Calories Card
+  caloriesCard: {
     backgroundColor: colors.background.secondary,
-    borderRadius: borderRadius.lg,
+    borderRadius: 24,
     padding: spacing.lg,
     marginBottom: spacing.lg,
-    ...shadows.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    overflow: 'hidden',
   },
-  cardTitle: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-    color: colors.text.secondary,
-    marginBottom: spacing.md,
+  caloriesGradient: {
+    ...StyleSheet.absoluteFillObject,
   },
-  caloriesContainer: {
+  caloriesContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: spacing.lg,
   },
-  caloriesRing: {
-    alignItems: 'flex-start',
+  caloriesLeft: {
+    flex: 1,
   },
-  caloriesMain: {
-    fontSize: fontSize.hero,
-    fontWeight: fontWeight.bold,
+  caloriesRingContainer: {
+    position: 'relative',
+    width: 140,
+    height: 140,
+  },
+  caloriesCenter: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  caloriesNumber: {
+    fontSize: 36,
+    fontWeight: '700',
     color: colors.text.primary,
   },
-  caloriesGoal: {
+  caloriesUnit: {
     fontSize: fontSize.sm,
     color: colors.text.secondary,
+    marginTop: -4,
   },
-  caloriesPercent: {
-    fontSize: fontSize.xxl,
-    fontWeight: fontWeight.bold,
-    color: colors.accent.primary,
+  caloriesRight: {
+    flex: 1,
+    paddingLeft: spacing.lg,
   },
+  caloriesStat: {
+    marginBottom: spacing.md,
+  },
+  caloriesStatLabel: {
+    fontSize: fontSize.sm,
+    color: colors.text.tertiary,
+    marginBottom: 4,
+  },
+  caloriesStatValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  caloriesDivider: {
+    height: 1,
+    backgroundColor: colors.border.primary,
+    marginBottom: spacing.md,
+  },
+
+  // Progress Ring
+  ringBackground: {
+    position: 'absolute',
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  ringProgress: {
+    position: 'absolute',
+  },
+
+  // Macros
   macrosContainer: {
     gap: spacing.md,
   },
   macroItem: {
+    gap: spacing.xs,
+  },
+  macroHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  macroLabelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
+  },
+  macroIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   macroLabel: {
-    width: 60,
     fontSize: fontSize.sm,
     color: colors.text.secondary,
-  },
-  macroBar: {
-    flex: 1,
-    height: 8,
-    backgroundColor: colors.background.tertiary,
-    borderRadius: borderRadius.full,
-  },
-  macroFill: {
-    height: '100%',
-    borderRadius: borderRadius.full,
-  },
-  proteinFill: {
-    backgroundColor: '#EF4444',
-  },
-  carbsFill: {
-    backgroundColor: '#F59E0B',
-  },
-  fatFill: {
-    backgroundColor: '#3B82F6',
+    fontWeight: '500',
   },
   macroValue: {
-    width: 45,
     fontSize: fontSize.sm,
-    color: colors.text.primary,
-    textAlign: 'right',
   },
-  workoutPreview: {
+  macroGoal: {
+    color: colors.text.tertiary,
+  },
+  macroBarContainer: {
+    height: 8,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  macroBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+
+  // Workout Card
+  workoutCard: {
+    backgroundColor: colors.background.secondary,
+    borderRadius: 20,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    overflow: 'hidden',
+  },
+  workoutPressable: {
+    padding: spacing.lg,
+  },
+  workoutContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
   workoutInfo: {
     flex: 1,
   },
-  workoutName: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
-    color: colors.text.primary,
+  workoutBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: spacing.sm,
   },
-  workoutSubtext: {
+  workoutBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.accent.primary,
+    letterSpacing: 0.5,
+  },
+  workoutTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 4,
+  },
+  workoutMeta: {
     fontSize: fontSize.sm,
     color: colors.text.secondary,
-    marginTop: spacing.xs,
   },
   playButton: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.accent.primary,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  playIcon: {
-    fontSize: 18,
-    color: colors.text.primary,
-    marginLeft: 4,
-  },
+
+  // Section Title
   sectionTitle: {
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
+    fontWeight: '600',
     color: colors.text.secondary,
     marginBottom: spacing.md,
+    marginTop: spacing.sm,
   },
-  quickActions: {
+
+  // Quick Actions
+  quickActionsGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: spacing.md,
     marginBottom: spacing.lg,
   },
   quickAction: {
     flex: 1,
     backgroundColor: colors.background.secondary,
-    borderRadius: borderRadius.md,
+    borderRadius: 16,
     padding: spacing.md,
     alignItems: 'center',
-    marginHorizontal: spacing.xs,
-    ...shadows.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
-  quickActionIcon: {
-    fontSize: 24,
-    marginBottom: spacing.xs,
+  quickActionPressed: {
+    transform: [{ scale: 0.95 }],
+    opacity: 0.9,
+  },
+  quickActionIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
   },
   quickActionText: {
     fontSize: fontSize.xs,
     color: colors.text.secondary,
+    fontWeight: '500',
   },
+
+  // Streak Card
   streakCard: {
     backgroundColor: colors.background.secondary,
-    borderRadius: borderRadius.lg,
+    borderRadius: 20,
     padding: spacing.lg,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(249, 115, 22, 0.2)',
+    overflow: 'hidden',
+  },
+  streakContent: {
+    gap: spacing.md,
+  },
+  streakLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    ...shadows.sm,
+    gap: spacing.md,
   },
-  streakIcon: {
-    fontSize: 32,
-    marginRight: spacing.md,
+  streakIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(249, 115, 22, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  streakInfo: {
-    flex: 1,
+  streakEmoji: {
+    fontSize: 24,
   },
   streakNumber: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontSize: 18,
+    fontWeight: '700',
     color: colors.text.primary,
   },
   streakText: {
+    fontSize: fontSize.sm,
+    color: colors.text.secondary,
+  },
+  streakDays: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  streakDay: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  streakDayLabel: {
+    fontSize: 11,
+    color: colors.text.tertiary,
+    fontWeight: '500',
+  },
+  streakDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  streakDotActive: {
+    backgroundColor: '#F97316',
+  },
+
+  // Check-in Card
+  checkinCard: {
+    backgroundColor: colors.background.secondary,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    overflow: 'hidden',
+  },
+  checkinContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  checkinIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkinText: {
+    flex: 1,
+  },
+  checkinTitle: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  checkinSubtitle: {
     fontSize: fontSize.sm,
     color: colors.text.secondary,
   },
