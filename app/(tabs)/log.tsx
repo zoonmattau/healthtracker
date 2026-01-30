@@ -13,7 +13,7 @@ export default function Log() {
       </View>
 
       <View style={styles.options}>
-        <TouchableOpacity style={styles.optionCard} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.optionCard} activeOpacity={0.8} onPress={() => router.push('/log/food')}>
           <View style={styles.optionIcon}>
             <Text style={styles.iconText}>🍽️</Text>
           </View>
@@ -24,7 +24,7 @@ export default function Log() {
           <Text style={styles.arrow}>→</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.optionCard} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.optionCard} activeOpacity={0.8} onPress={() => router.push('/log/workout')}>
           <View style={styles.optionIcon}>
             <Text style={styles.iconText}>🏋️</Text>
           </View>
@@ -35,7 +35,7 @@ export default function Log() {
           <Text style={styles.arrow}>→</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.optionCard} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.optionCard} activeOpacity={0.8} onPress={() => router.push('/log/water')}>
           <View style={styles.optionIcon}>
             <Text style={styles.iconText}>💧</Text>
           </View>
@@ -46,7 +46,7 @@ export default function Log() {
           <Text style={styles.arrow}>→</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.optionCard} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.optionCard} activeOpacity={0.8} onPress={() => router.push('/log/sleep')}>
           <View style={styles.optionIcon}>
             <Text style={styles.iconText}>😴</Text>
           </View>
@@ -57,7 +57,7 @@ export default function Log() {
           <Text style={styles.arrow}>→</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.optionCard} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.optionCard} activeOpacity={0.8} onPress={() => router.push('/log/weight')}>
           <View style={styles.optionIcon}>
             <Text style={styles.iconText}>⚖️</Text>
           </View>
@@ -68,7 +68,7 @@ export default function Log() {
           <Text style={styles.arrow}>→</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.optionCard} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.optionCard} activeOpacity={0.8} onPress={() => router.push('/log/supplements')}>
           <View style={styles.optionIcon}>
             <Text style={styles.iconText}>💊</Text>
           </View>

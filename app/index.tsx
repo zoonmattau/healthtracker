@@ -13,11 +13,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fontSize, fontWeight, spacing, borderRadius } from '../src/constants/theme';
+import { useAuth } from '../src/context/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
 export default function Landing() {
   const router = useRouter();
+  const { session, isGuest, setGuestMode } = useAuth();
 
   // Animation values
   const logoScale = useRef(new Animated.Value(0)).current;
@@ -115,7 +117,12 @@ export default function Landing() {
     animateOrb(orb1, 4000);
     animateOrb(orb2, 5000);
     animateOrb(orb3, 6000);
-  }, []);
+
+    // If user is already logged in or in guest mode, redirect to tabs
+    if (session || isGuest) {
+      router.replace('/(tabs)');
+    }
+  }, [session, isGuest]);
 
   const handlePressIn = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -129,6 +136,12 @@ export default function Landing() {
   const handleLogin = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/(auth)/login');
+  };
+
+  const handleExplore = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await setGuestMode(true);
+    router.replace('/(tabs)');
   };
 
   // Interpolate orb positions
@@ -220,7 +233,7 @@ export default function Landing() {
               },
             ]}
           >
-            FitnessApp
+            UpRep
           </Animated.Text>
 
           {/* Subtitle */}
@@ -230,7 +243,7 @@ export default function Landing() {
               { opacity: subtitleOpacity },
             ]}
           >
-            Your complete health companion.{'\n'}
+            Your one-stop gym ecosystem.{'\n'}
             Train smarter. Live better.
           </Animated.Text>
         </View>
@@ -304,6 +317,19 @@ export default function Landing() {
             ]}
           >
             <Text style={styles.secondaryButtonText}>I already have an account</Text>
+          </Pressable>
+
+          {/* Explore as Guest */}
+          <Pressable
+            onPressIn={handlePressIn}
+            onPress={handleExplore}
+            style={({ pressed }) => [
+              styles.ghostButton,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            <Ionicons name="compass-outline" size={18} color={colors.text.tertiary} />
+            <Text style={styles.ghostButtonText}>Explore without an account</Text>
           </Pressable>
         </Animated.View>
       </View>
@@ -474,6 +500,17 @@ const styles = StyleSheet.create({
   buttonPressed: {
     transform: [{ scale: 0.98 }],
     opacity: 0.9,
+  },
+  ghostButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
+  },
+  ghostButtonText: {
+    fontSize: fontSize.sm,
+    color: colors.text.tertiary,
   },
 
   bottomFade: {

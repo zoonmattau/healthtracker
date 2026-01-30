@@ -1,7 +1,10 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import { colors, fontSize, fontWeight, spacing, borderRadius, shadows } from '../../src/constants/theme';
 
 export default function Programs() {
+  const router = useRouter();
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
@@ -42,7 +45,7 @@ export default function Programs() {
         </View>
 
         {/* Placeholder program cards */}
-        <View style={styles.programCard}>
+        <TouchableOpacity style={styles.programCard} onPress={() => router.push('/program/1')}>
           <View style={styles.programImage}>
             <Text style={styles.programImageText}>💪</Text>
           </View>
@@ -54,9 +57,9 @@ export default function Programs() {
               <Text style={styles.downloadText}>12.4k downloads</Text>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
-        <View style={styles.programCard}>
+        <TouchableOpacity style={styles.programCard} onPress={() => router.push('/program/2')}>
           <View style={styles.programImage}>
             <Text style={styles.programImageText}>🏃</Text>
           </View>
@@ -68,9 +71,9 @@ export default function Programs() {
               <Text style={styles.downloadText}>8.2k downloads</Text>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
-        <View style={styles.programCard}>
+        <TouchableOpacity style={styles.programCard} onPress={() => router.push('/program/3')}>
           <View style={styles.programImage}>
             <Text style={styles.programImageText}>🎯</Text>
           </View>
@@ -82,7 +85,7 @@ export default function Programs() {
               <Text style={styles.downloadText}>22.1k downloads</Text>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );

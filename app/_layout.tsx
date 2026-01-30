@@ -1,32 +1,19 @@
-import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { colors } from '../src/constants/theme';
-import { supabase } from '../src/lib/supabase';
-import { Session } from '@supabase/supabase-js';
+import { AuthProvider, useAuth } from '../src/context/AuthContext';
+import { DashboardProvider } from '../src/context/DashboardContext';
+import { DataProvider } from '../src/context/DataContext';
+import { RestTimerProvider } from '../src/context/RestTimerContext';
+import { ExerciseSelectionProvider } from '../src/context/ExerciseSelectionContext';
+import AuthPromptModal from '../src/components/AuthPromptModal';
 
-export default function RootLayout() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+function RootLayoutContent() {
+  const { isLoading } = useAuth();
 
-  useEffect(() => {
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={{
         flex: 1,
@@ -40,7 +27,7 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -52,7 +39,29 @@ export default function RootLayout() {
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="log" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="settings" options={{ headerShown: false }} />
+        <Stack.Screen name="program" options={{ headerShown: false }} />
       </Stack>
+      <AuthPromptModal />
+    </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <DataProvider>
+          <RestTimerProvider>
+            <ExerciseSelectionProvider>
+              <DashboardProvider>
+                <RootLayoutContent />
+              </DashboardProvider>
+            </ExerciseSelectionProvider>
+          </RestTimerProvider>
+        </DataProvider>
+      </AuthProvider>
     </GestureHandlerRootView>
   );
 }

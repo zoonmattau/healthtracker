@@ -61,7 +61,7 @@ export default function Profile() {
         </View>
         <Text style={styles.userName}>{userName}</Text>
         <Text style={styles.userEmail}>{userEmail}</Text>
-        <TouchableOpacity style={styles.editButton}>
+        <TouchableOpacity style={styles.editButton} onPress={() => router.push('/settings/edit-profile')}>
           <Text style={styles.editButtonText}>Edit Profile</Text>
         </TouchableOpacity>
       </View>
@@ -88,19 +88,19 @@ export default function Profile() {
       <View style={styles.menuSection}>
         <Text style={styles.menuSectionTitle}>Account</Text>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings/personal-info')}>
           <Text style={styles.menuIcon}>👤</Text>
           <Text style={styles.menuText}>Personal Information</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings/goals')}>
           <Text style={styles.menuIcon}>🎯</Text>
           <Text style={styles.menuText}>Goals</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings/preferences')}>
           <Text style={styles.menuIcon}>⚙️</Text>
           <Text style={styles.menuText}>Preferences</Text>
           <Text style={styles.menuArrow}>→</Text>
@@ -110,19 +110,19 @@ export default function Profile() {
       <View style={styles.menuSection}>
         <Text style={styles.menuSectionTitle}>App</Text>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings/devices')}>
           <Text style={styles.menuIcon}>⌚</Text>
           <Text style={styles.menuText}>Connected Devices</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings/notifications')}>
           <Text style={styles.menuIcon}>🔔</Text>
           <Text style={styles.menuText}>Notifications</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings/appearance')}>
           <Text style={styles.menuIcon}>🌙</Text>
           <Text style={styles.menuText}>Appearance</Text>
           <Text style={styles.menuArrow}>→</Text>
@@ -132,19 +132,19 @@ export default function Profile() {
       <View style={styles.menuSection}>
         <Text style={styles.menuSectionTitle}>Support</Text>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings/help')}>
           <Text style={styles.menuIcon}>❓</Text>
           <Text style={styles.menuText}>Help & FAQ</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings/feedback')}>
           <Text style={styles.menuIcon}>📝</Text>
           <Text style={styles.menuText}>Send Feedback</Text>
           <Text style={styles.menuArrow}>→</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings/privacy')}>
           <Text style={styles.menuIcon}>📄</Text>
           <Text style={styles.menuText}>Privacy Policy</Text>
           <Text style={styles.menuArrow}>→</Text>
